@@ -1,0 +1,198 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
+
+# carregando o dataset
+iris = load_iris()
+
+X = iris.data
+y = iris.target
+
+print("Formato dos dados:", X.shape)
+print("Classes:", iris.target_names)
+
+print("\nPrimeiras 5 linhas:")
+print(X[:5])
+
+
+# estatisticas basicas
+media = np.mean(X, axis=0)
+variancia = np.var(X, axis=0)
+desvio = np.std(X, axis=0)
+
+print("\nMedia:")
+print(media)
+
+print("\nVariancia:")
+print(variancia)
+
+print("\nDesvio padrao:")
+print(desvio)
+
+
+# padronizando os dados
+X_padronizado = (X - media) / desvio
+
+
+# matriz de covariancia
+n = X_padronizado.shape[0]
+
+covariancia = (
+    X_padronizado.T @ X_padronizado
+) / (n - 1)
+
+print("\nMatriz de covariancia:")
+print(covariancia)
+
+
+# autovalores e autovetores
+autovalores, autovetores = np.linalg.eigh(covariancia)
+
+# colocando do maior para o menor
+ordem = np.argsort(autovalores)[::-1]
+
+autovalores = autovalores[ordem]
+autovetores = autovetores[:, ordem]
+
+print("\nAutovalores:")
+print(autovalores)
+
+
+# porcentagem da variancia explicada
+variancia_explicada = autovalores / np.sum(autovalores)
+
+print("\nVariancia explicada:")
+
+for i in range(len(variancia_explicada)):
+    print(
+        f"PC{i + 1}: "
+        f"{variancia_explicada[i] * 100:.2f}%"
+    )
+
+
+# pegando as duas primeiras componentes
+componentes = autovetores[:, :2]
+
+X_pca = X_padronizado @ componentes
+
+
+# grafico do PCA
+plt.figure(figsize=(8, 6))
+
+for classe in np.unique(y):
+    plt.scatter(
+        X_pca[y == classe, 0],
+        X_pca[y == classe, 1],
+        label=iris.target_names[classe]
+    )
+
+plt.xlabel("Componente Principal 1")
+plt.ylabel("Componente Principal 2")
+plt.title("PCA - Iris Dataset")
+plt.legend()
+plt.grid()
+
+plt.show()
+
+
+# comprimento da petala
+setosa = X[y == 0, 2]
+versicolor = X[y == 1, 2]
+
+# usando os mesmos intervalos para as duas classes
+menor = min(np.min(setosa), np.min(versicolor))
+maior = max(np.max(setosa), np.max(versicolor))
+
+bins = np.linspace(menor, maior, 10)
+
+hist_setosa, _ = np.histogram(setosa, bins=bins)
+hist_versicolor, _ = np.histogram(versicolor, bins=bins)
+
+# transformando frequencia em probabilidade
+p_setosa = hist_setosa / np.sum(hist_setosa)
+p_versicolor = hist_versicolor / np.sum(hist_versicolor)
+
+print("\nProbabilidades Setosa:")
+print(p_setosa)
+
+print("\nProbabilidades Versicolor:")
+print(p_versicolor)
+
+
+#calculando entropia
+p1 = p_setosa[p_setosa > 0]
+p2 = p_versicolor[p_versicolor > 0]
+
+entropia_setosa = -np.sum(p1 * np.log2(p1))
+entropia_versicolor = -np.sum(p2 * np.log2(p2))
+
+print("\nEntropia Setosa:", entropia_setosa)
+print("Entropia Versicolor:", entropia_versicolor)
+
+
+# entropia cruzada
+epsilon = 0.000000000001
+
+q = p_versicolor + epsilon
+q = q / np.sum(q)
+
+entropia_cruzada = -np.sum(
+    p_setosa * np.log2(q)
+)
+
+print("Entropia cruzada:", entropia_cruzada)
+
+
+# grafico das distribuicoes
+centros = (bins[:-1] + bins[1:]) / 2
+
+plt.figure(figsize=(8, 6))
+
+plt.plot(
+    centros,
+    p_setosa,
+    marker="o",
+    label="Setosa"
+)
+
+plt.plot(
+    centros,
+    p_versicolor,
+    marker="o",
+    label="Versicolor"
+)
+
+plt.xlabel("Comprimento da petala")
+plt.ylabel("Probabilidade")
+plt.title("Distribuicao de probabilidade")
+plt.legend()
+plt.grid()
+
+plt.show()
+
+
+comprimento_petala = X[:, 2]
+largura_petala = X[:, 3]
+
+plt.figure(figsize=(8, 6))
+
+plt.hist(
+    comprimento_petala,
+    bins=10,
+    alpha=0.6,
+    label="Comprimento da petala"
+)
+
+plt.hist(
+    largura_petala,
+    bins=10,
+    alpha=0.6,
+    label="Largura da petala"
+)
+
+plt.xlabel("Medida")
+plt.ylabel("Frequencia")
+plt.title("Distribuicao das caracteristicas")
+plt.legend()
+
+plt.show()
